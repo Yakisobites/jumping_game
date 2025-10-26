@@ -2,17 +2,21 @@ use macroquad::prelude::*;
 use rapier2d::prelude::*;
 
 const SCALE: f32 = 50.0; // [pixel/m]
+// const CAMERA_WIDTH:f32 = 100.0; // [pixel]
 const CAMERA_HEIGHT:f32 = 100.0; // [pixel]
 const BALL_RADIUS: f32 = 0.3; // [m]
 const ARM_HALF_HEIGHT: f32 = 0.4; // [m]
 const ARM_RADIUS: f32 = 0.50; // [m]
 const FLOAR_THICKNESS: f32 = 0.2; // [m]
+const TIME_DELTA: f32 = 1.0 / 1200.0; // [1/s]
+const KP: f32 = 50.0;
+const KD: f32 = 5.0;
 
 // === 座標変換 ===
 // Rapierの世界座標（メートル単位）を画面座標（ピクセル）に変換
-fn world_to_screen(v: Vector<f32>) -> Vec2 {
+fn world_to_screen(v: Vector<f32>, camera_pos: Vector<f32>) -> Vec2 {
     // y軸を上下反転して、中心を画面中央に
-    vec2(v.x * SCALE + screen_width() / 2.0, screen_height() - v.y * SCALE - CAMERA_HEIGHT)
+    vec2(v.x * SCALE + screen_width() / 2.0 - camera_pos[0] * SCALE, screen_height() - v.y * SCALE - CAMERA_HEIGHT + camera_pos[1] * SCALE)
 }
 
 #[macroquad::main("Rapier + Macroquad Bouncing Ball")]
@@ -20,7 +24,7 @@ async fn main() {
     // === Rapier 構造体初期化 ===
     let gravity = vector![0.0, -9.81];
     let mut integration_parameters = IntegrationParameters::default();
-    integration_parameters.dt = 1.0 / 1200.0;
+    integration_parameters.dt = TIME_DELTA;
     let mut physics_pipeline = PhysicsPipeline::new();
     let mut island_manager = IslandManager::new();
     let mut broad_phase = DefaultBroadPhase::new();
@@ -63,6 +67,8 @@ async fn main() {
 
     let tex_scale = ((BALL_RADIUS + ARM_RADIUS + ARM_HALF_HEIGHT / 2.0) * 2.0 * SCALE) / texture.width() as f32;
 
+    let mut camera_pos = vector![0.0, 0.0];
+    let mut camera_vel = vector![0.0, 0.0];
     // === メインループ ===
     loop {
         clear_background(LIGHTGRAY);
@@ -88,7 +94,7 @@ async fn main() {
         let ball = rigid_body_set.get_mut(ball_handle).unwrap();
         let pos = ball.translation();
         let angle = ball.rotation().angle(); // 角度
-        let screen_pos = world_to_screen(*pos);
+        let screen_pos = world_to_screen(*pos, camera_pos);
         draw_texture_ex(
             &texture,
             screen_pos.x - texture.width() as f32 * tex_scale / 2.0,
@@ -103,11 +109,21 @@ async fn main() {
         );
 
         // --- 床を描画 ---
-        let ground_y = world_to_screen(vector![0.0, - FLOAR_THICKNESS / 2.0]).y;
+        let ground_y = world_to_screen(vector![0.0, - FLOAR_THICKNESS / 2.0], camera_pos).y;
         draw_rectangle(0.0, ground_y, screen_width(), FLOAR_THICKNESS * SCALE, DARKGRAY);
-        // // --- 高さをコンソールに出す（デバッグ） ---
+        // --- 高さをコンソールに出す（デバッグ） ---
         // println!("Ball altitude: {:.2}", pos.y);
         // println!("Ball rotation: {:.2}", angle);
+        // println!("Ball placement: {:.2}", pos.x);
+        // println!("Camera altitude: {:.2}", camera_pos[1]);
+        // println!("Camera placement: {:.2}", camera_pos[0]);
+        // cameraをFerrisくんにフォーカスするようにする
+        let target = vector![pos.x, pos.y];
+        let error = target - camera_pos;
+        let force = error * KP - camera_vel * KD;
+
+        camera_vel += force * TIME_DELTA;
+        camera_pos += camera_vel * TIME_DELTA;
 
         // --- ESCキーで終了 ---
         if is_key_down(KeyCode::Escape) {
