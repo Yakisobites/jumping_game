@@ -1,0 +1,8 @@
+[package]
+name = "rapier_macroquad_example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+macroquad = "0.4"
+rapier2d = "0.30.1"
