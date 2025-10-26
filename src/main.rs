@@ -3,7 +3,9 @@ use rapier2d::prelude::*;
 
 const SCALE: f32 = 50.0; // [pixel/m]
 const CAMERA_HEIGHT:f32 = 100.0; // [pixel]
-const BALL_RADIUS: f32 = 0.5; // [m]
+const BALL_RADIUS: f32 = 0.3; // [m]
+const ARM_HALF_HEIGHT: f32 = 0.5; // [m]
+const ARM_RADIUS: f32 = 0.30; // [m]
 const FLOAR_THICKNESS: f32 = 0.2; // [m]
 
 // === 座標変換 ===
@@ -40,9 +42,20 @@ async fn main() {
         .translation(vector![0.0, 10.0])
         .build();
     let ball_collider = ColliderBuilder::ball(BALL_RADIUS).restitution(0.8).build();
+    // 左側のカプセル（x軸方向）
+    let left_arm = ColliderBuilder::capsule_x(ARM_HALF_HEIGHT, ARM_RADIUS)
+        .translation(vector![-(BALL_RADIUS + ARM_RADIUS), 0.0]) // 左にオフセット
+        .build();
+
+    // 右側のカプセル（x軸方向）
+    let right_arm = ColliderBuilder::capsule_x(ARM_HALF_HEIGHT, ARM_RADIUS)
+        .translation(vector![(BALL_RADIUS + ARM_RADIUS), 0.0]) // 右にオフセット
+        .build();
 
     let ball_handle = rigid_body_set.insert(ball_body);
     collider_set.insert_with_parent(ball_collider, ball_handle, &mut rigid_body_set);
+    collider_set.insert_with_parent(left_arm, ball_handle, &mut rigid_body_set);
+    collider_set.insert_with_parent(right_arm, ball_handle, &mut rigid_body_set);
 
     // === メインループ ===
     loop {
@@ -68,15 +81,54 @@ async fn main() {
         // let ball = &rigid_body_set[ball_handle];
         let ball = rigid_body_set.get_mut(ball_handle).unwrap();
         let pos = ball.translation();
+        let rot = ball.rotation(); // 回転
+        let angle = ball.rotation().angle(); // 角度
+        let dir = vec2(angle.cos(), angle.sin()); // 向き
         let screen_pos = world_to_screen(*pos);
         draw_circle(screen_pos.x, screen_pos.y, BALL_RADIUS * SCALE, RED);
+        // 各パーツのローカル位置
+        let parts = [
+            vector![-(BALL_RADIUS + ARM_RADIUS), 0.0],
+            vector![(BALL_RADIUS + ARM_RADIUS), 0.0],
+        ];
+        // 各パーツを胴体の回転に合わせて描画
+        for local in parts {
+            let rotated = rot * local; // ← 回転適用
+            let world = pos + rotated;
+            let screen = world_to_screen(world);
+            draw_rectangle(
+                screen.x - ARM_RADIUS * SCALE,
+                screen.y - ARM_HALF_HEIGHT * SCALE,
+                ARM_RADIUS * 2.0 * SCALE,
+                ARM_HALF_HEIGHT * 2.0 * SCALE,
+                RED,
+            );
+        }
+        // 向きを示す線（回転確認用）
+        // === ワールド座標で線の始点・終点を求める ===
+        let start_world = pos;
+        let end_world = pos + vector![dir.x * 0.5, dir.y * 0.5]; // 0.5m 先
+
+        // === 画面座標に変換 ===
+        let start_screen = world_to_screen(*start_world);
+        let end_screen = world_to_screen(end_world);
+
+        // === 描画 ===
+        draw_line(
+            start_screen.x,
+            start_screen.y,
+            end_screen.x,
+            end_screen.y,
+            2.0,
+            BLACK,
+        );
 
         // --- 床を描画 ---
-        let ground_y = world_to_screen(vector![0.0, 0.0]).y;
-        draw_rectangle(0.0, ground_y + (FLOAR_THICKNESS * SCALE) / 2.0, screen_width(), - FLOAR_THICKNESS * SCALE, DARKGRAY);
-
+        let ground_y = world_to_screen(vector![0.0, - FLOAR_THICKNESS / 2.0]).y;
+        draw_rectangle(0.0, ground_y, screen_width(), FLOAR_THICKNESS * SCALE, DARKGRAY);
         // --- 高さをコンソールに出す（デバッグ） ---
         println!("Ball altitude: {:.2}", pos.y);
+        println!("Ball rotation: {:.2}", angle);
 
         // --- ESCキーで終了 ---
         if is_key_down(KeyCode::Escape) {
