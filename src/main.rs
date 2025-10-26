@@ -4,8 +4,8 @@ use rapier2d::prelude::*;
 const SCALE: f32 = 50.0; // [pixel/m]
 const CAMERA_HEIGHT:f32 = 100.0; // [pixel]
 const BALL_RADIUS: f32 = 0.3; // [m]
-const ARM_HALF_HEIGHT: f32 = 0.5; // [m]
-const ARM_RADIUS: f32 = 0.30; // [m]
+const ARM_HALF_HEIGHT: f32 = 0.4; // [m]
+const ARM_RADIUS: f32 = 0.50; // [m]
 const FLOAR_THICKNESS: f32 = 0.2; // [m]
 
 // === 座標変換 ===
@@ -37,7 +37,8 @@ async fn main() {
     let ground = ColliderBuilder::cuboid(100.0, FLOAR_THICKNESS / 2.0).build();
     collider_set.insert(ground);
 
-    // === ボール作成 ===
+    // === Ferris君作成 ===
+    // 胴体の作成
     let ball_body = RigidBodyBuilder::dynamic()
         .translation(vector![0.0, 10.0])
         .build();
@@ -56,6 +57,11 @@ async fn main() {
     collider_set.insert_with_parent(ball_collider, ball_handle, &mut rigid_body_set);
     collider_set.insert_with_parent(left_arm, ball_handle, &mut rigid_body_set);
     collider_set.insert_with_parent(right_arm, ball_handle, &mut rigid_body_set);
+
+    let texture = load_texture("assets/ferris.png").await.unwrap();
+    texture.set_filter(FilterMode::Nearest);
+
+    let tex_scale = ((BALL_RADIUS + ARM_RADIUS + ARM_HALF_HEIGHT / 2.0) * 2.0 * SCALE) / texture.width() as f32;
 
     // === メインループ ===
     loop {
@@ -81,54 +87,27 @@ async fn main() {
         // let ball = &rigid_body_set[ball_handle];
         let ball = rigid_body_set.get_mut(ball_handle).unwrap();
         let pos = ball.translation();
-        let rot = ball.rotation(); // 回転
         let angle = ball.rotation().angle(); // 角度
-        let dir = vec2(angle.cos(), angle.sin()); // 向き
         let screen_pos = world_to_screen(*pos);
-        draw_circle(screen_pos.x, screen_pos.y, BALL_RADIUS * SCALE, RED);
-        // 各パーツのローカル位置
-        let parts = [
-            vector![-(BALL_RADIUS + ARM_RADIUS), 0.0],
-            vector![(BALL_RADIUS + ARM_RADIUS), 0.0],
-        ];
-        // 各パーツを胴体の回転に合わせて描画
-        for local in parts {
-            let rotated = rot * local; // ← 回転適用
-            let world = pos + rotated;
-            let screen = world_to_screen(world);
-            draw_rectangle(
-                screen.x - ARM_RADIUS * SCALE,
-                screen.y - ARM_HALF_HEIGHT * SCALE,
-                ARM_RADIUS * 2.0 * SCALE,
-                ARM_HALF_HEIGHT * 2.0 * SCALE,
-                RED,
-            );
-        }
-        // 向きを示す線（回転確認用）
-        // === ワールド座標で線の始点・終点を求める ===
-        let start_world = pos;
-        let end_world = pos + vector![dir.x * 0.5, dir.y * 0.5]; // 0.5m 先
-
-        // === 画面座標に変換 ===
-        let start_screen = world_to_screen(*start_world);
-        let end_screen = world_to_screen(end_world);
-
-        // === 描画 ===
-        draw_line(
-            start_screen.x,
-            start_screen.y,
-            end_screen.x,
-            end_screen.y,
-            2.0,
-            BLACK,
+        draw_texture_ex(
+            &texture,
+            screen_pos.x - texture.width() as f32 * tex_scale / 2.0,
+            screen_pos.y - texture.height() as f32 * tex_scale / 2.0,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(texture.width() as f32 * tex_scale, texture.height() as f32 * tex_scale)),
+                rotation: angle, // ← 回転角を適用！
+                // pivot: Some(vec2(texture.width() as f32 * tex_scale / 2.0, texture.height() as f32 * tex_scale / 2.0)), // 中心回転
+                ..Default::default()
+            },
         );
 
         // --- 床を描画 ---
         let ground_y = world_to_screen(vector![0.0, - FLOAR_THICKNESS / 2.0]).y;
         draw_rectangle(0.0, ground_y, screen_width(), FLOAR_THICKNESS * SCALE, DARKGRAY);
-        // --- 高さをコンソールに出す（デバッグ） ---
-        println!("Ball altitude: {:.2}", pos.y);
-        println!("Ball rotation: {:.2}", angle);
+        // // --- 高さをコンソールに出す（デバッグ） ---
+        // println!("Ball altitude: {:.2}", pos.y);
+        // println!("Ball rotation: {:.2}", angle);
 
         // --- ESCキーで終了 ---
         if is_key_down(KeyCode::Escape) {
@@ -154,7 +133,7 @@ async fn main() {
             // ball.add_torque(0.0, true);
             // ball.add_force_at_point(vector![0.0, 10.0], point![1.0, 2.0], true);
 
-            ball.apply_impulse(vector![-0.01, 0.0], true);
+            ball.apply_impulse(vector![-0.03, 0.0], true);
             // ball.apply_torque_impulse(100.0, true);
             // ball.apply_impulse_at_point(vector![0.0, 10.0], point![1.0, 2.0], true);
         }
@@ -168,7 +147,7 @@ async fn main() {
             // ball.add_torque(0.0, true);
             // ball.add_force_at_point(vector![0.0, 10.0], point![1.0, 2.0], true);
 
-            ball.apply_impulse(vector![0.01, 0.0], true);
+            ball.apply_impulse(vector![0.03, 0.0], true);
             // ball.apply_torque_impulse(100.0, true);
             // ball.apply_impulse_at_point(vector![0.0, 10.0], point![1.0, 2.0], true);
         }
