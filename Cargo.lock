@@ -123,6 +123,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferris_jumping_game"
+version = "0.1.0"
+dependencies = [
+ "macroquad",
+ "rapier2d",
+]
+
+[[package]]
 name = "flate2"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -600,14 +608,6 @@ dependencies = [
  "static_assertions",
  "thiserror",
  "wide",
-]
-
-[[package]]
-name = "rapier_macroquad_example"
-version = "0.1.0"
-dependencies = [
- "macroquad",
- "rapier2d",
 ]
 
 [[package]]

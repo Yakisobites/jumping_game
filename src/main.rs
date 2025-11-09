@@ -120,8 +120,7 @@ async fn main() {
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(texture.width() as f32 * tex_scale, texture.height() as f32 * tex_scale)),
-                rotation: angle, // ← 回転角を適用！
-                // pivot: Some(vec2(texture.width() as f32 * tex_scale / 2.0, texture.height() as f32 * tex_scale / 2.0)), // 中心回転
+                rotation: angle, // 回転角を適用
                 ..Default::default()
             },
         );
@@ -135,8 +134,8 @@ async fn main() {
         let object_params = world_to_screen_cubiod(vec4(5.0, 5.0 / 2.0, 1.0, 5.0 / 2.0), camera_pos);
         draw_rectangle(object_params.x, object_params.y, object_params.z, object_params.w, BLUE);
         // --- 高さをコンソールに出す（デバッグ） ---
-        println!("Ball altitude: {:.2}", pos.y);
-        println!("Ball placement: {:.2}", pos.x);
+        // println!("Ball altitude: {:.2}", pos.y);
+        // println!("Ball placement: {:.2}", pos.x);
         // cameraをFerrisくんにフォーカスするようにする
         let target = vector![pos.x, pos.y];
         let error = target - camera_pos;
