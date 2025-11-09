@@ -1,5 +1,5 @@
 ## rapier + macroquadでゲーム開発
-
+![demo](assets/demo.png)
 
 ## 使用ライブラリ
  - rapier https://github.com/dimforge/rapier
@@ -7,8 +7,8 @@
 
 ## 操作方法
 
-↑：上昇
-→：右に移動
-←：左に移動
+ - ↑：上昇
+ - →：右に移動
+ - ←：左に移動
 
-"ESC"：終了
+ - "ESC"：終了
