@@ -1,17 +1,14 @@
+mod components;
 mod config;
-mod entities;
-mod physics;
-mod render;
+mod resources;
+mod systems;
 
+use config::*;
+use hecs::World;
 use macroquad::prelude::*;
+use resources::{Camera, GameAssets, GameScore, PhysicsWorld};
 use std::f32::consts::PI;
 
-use crate::config::*;
-use crate::entities::{Player, spawn_stage};
-use crate::physics::PhysicsWorld;
-use crate::render::{Camera, draw_player, draw_stage};
-
-// Configure game state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum GameState {
     Title,
@@ -19,16 +16,18 @@ enum GameState {
     GameOver,
 }
 
-// reset the initial state of the physics world and the camera
-fn reset_game(physics: &mut PhysicsWorld, camera: &mut Camera) -> Player {
+// ゲームの物理ワールド・カメラ・ECS Worldをリセットし、プレイヤーを再スポーンする
+fn reset_game(world: &mut World, physics: &mut PhysicsWorld, camera: &mut Camera) {
+    *world = World::new();
     *physics = PhysicsWorld::new();
     *camera = Camera::new();
 
-    spawn_stage(physics);
-    Player::spawn(physics)
+    systems::spawn_stage(physics);
+    systems::spawn_player(world, physics);
 }
 
-fn consume_physics_steps(accumulator: &mut f32, frame_time: f32) -> usize {
+// フレーム時間を固定タイムステップに変換し、実行すべきステップ数を返す
+pub fn consume_physics_steps(accumulator: &mut f32, frame_time: f32) -> usize {
     *accumulator += frame_time.min(MAX_FRAME_TIME);
 
     let mut steps = 0;
@@ -46,23 +45,22 @@ fn consume_physics_steps(accumulator: &mut f32, frame_time: f32) -> usize {
 
 #[macroquad::main("Rapier + Macroquad Bouncing Ball")]
 async fn main() {
-    // initialize game state
     let mut state = GameState::Title;
+    let mut world = World::new();
     let mut physics = PhysicsWorld::new();
     let mut camera = Camera::new();
-    let mut player = Player::spawn(&mut physics);
+    let mut score = GameScore::new();
 
-    // === variables for game scores ===
-    let mut current_score = 0.0;
-    let mut high_score = 0.0;
-    let mut physics_accumulator = 0.0;
+    // 初期スポーン
+    systems::spawn_stage(&mut physics);
+    systems::spawn_player(&mut world, &mut physics);
 
-    //load a texture file
+    // テクスチャの読み込みとスケール計算
     let texture = load_texture("assets/ferris.png").await.unwrap();
     texture.set_filter(FilterMode::Nearest);
-    // calculate the scale
     let tex_scale =
         ((BALL_RADIUS + ARM_RADIUS + ARM_HALF_HEIGHT) * 2.0 * SCALE) / texture.width() as f32;
+    let assets = GameAssets { texture, tex_scale };
 
     loop {
         clear_background(LIGHTGRAY);
@@ -73,9 +71,8 @@ async fn main() {
                 draw_text("Press [ENTER] to start", 40.0, 160.0, 25.0, GRAY);
 
                 if is_key_pressed(KeyCode::Enter) {
-                    player = reset_game(&mut physics, &mut camera);
-                    current_score = 0.0;
-                    physics_accumulator = 0.0;
+                    reset_game(&mut world, &mut physics, &mut camera);
+                    score.reset();
                     state = GameState::Playing;
                 }
             }
@@ -84,33 +81,42 @@ async fn main() {
                 let frame_time = get_frame_time();
                 let simulation_delta = frame_time.min(MAX_FRAME_TIME);
 
-                for _ in 0..consume_physics_steps(&mut physics_accumulator, frame_time) {
-                    player.handle_input(&mut physics);
-                    physics.step();
-                    player.enforce_speed_limit(&mut physics);
-                    current_score += TIME_DELTA;
+                for _ in 0..consume_physics_steps(&mut score.physics_accumulator, frame_time) {
+                    systems::player_input_system(&mut world, &mut physics);
+                    systems::physics_step_system(&mut world, &mut physics);
+                    systems::enforce_speed_limit_system(&mut world, &mut physics);
+                    score.current += TIME_DELTA;
                 }
 
-                let body = physics.bodies.get(player.handle).unwrap();
-                let pos = body.translation();
-                let angle = body.rotation().angle();
+                // プレイヤーの位置・角度をECSから読み取ってゲームオーバー判定
+                let mut player_pos_y = 0.0_f32;
+                let mut player_angle = 0.0_f32;
+                for (_tag, pos, rot) in world.query_mut::<(
+                    &components::PlayerTag,
+                    &components::Position,
+                    &components::Rotation,
+                )>() {
+                    player_pos_y = pos.y;
+                    player_angle = rot.angle;
+                }
 
                 if is_key_down(KeyCode::Escape) {
                     state = GameState::Title;
-                } else if pos.y < LOWER_WORLD_BOUND || PI - angle.abs() < ANGLE_THRESHOLD {
-                    if current_score > high_score {
-                        high_score = current_score;
+                } else if player_pos_y < LOWER_WORLD_BOUND
+                    || PI - player_angle.abs() < ANGLE_THRESHOLD
+                {
+                    if score.current > score.high {
+                        score.high = score.current;
                     }
                     state = GameState::GameOver;
                 }
 
-                camera.update(*pos, simulation_delta);
-
-                draw_stage(camera.pos);
-                draw_player(pos, angle, &texture, tex_scale, camera.pos);
+                systems::camera_update_system(&mut world, &mut camera, simulation_delta);
+                systems::draw_stage_system(&camera);
+                systems::draw_player_system(&mut world, &camera, &assets);
 
                 draw_text(
-                    format!("TIME: {:.2}s", current_score).as_str(),
+                    format!("TIME: {:.2}s", score.current).as_str(),
                     20.0,
                     40.0,
                     30.0,
@@ -119,7 +125,7 @@ async fn main() {
             }
 
             GameState::GameOver => {
-                draw_stage(camera.pos);
+                systems::draw_stage_system(&camera);
 
                 draw_rectangle(
                     0.0,
@@ -131,14 +137,14 @@ async fn main() {
 
                 draw_text("GAME OVER", 40.0, 100.0, 60.0, RED);
                 draw_text(
-                    format!("YOUR SCORE: {:.2}s", current_score).as_str(),
+                    format!("YOUR SCORE: {:.2}s", score.current).as_str(),
                     40.0,
                     150.0,
                     25.0,
                     WHITE,
                 );
                 draw_text(
-                    format!("HIGH SCORE: {:.2}s", current_score).as_str(),
+                    format!("HIGH SCORE: {:.2}s", score.high).as_str(),
                     40.0,
                     180.0,
                     25.0,
@@ -149,9 +155,8 @@ async fn main() {
                 draw_text("Press [ESC] for Title", 40.0, 260.0, 25.0, LIGHTGRAY);
 
                 if is_key_pressed(KeyCode::R) {
-                    player = reset_game(&mut physics, &mut camera);
-                    current_score = 0.0;
-                    physics_accumulator = 0.0;
+                    reset_game(&mut world, &mut physics, &mut camera);
+                    score.reset();
                     state = GameState::Playing;
                 } else if is_key_pressed(KeyCode::Escape) {
                     state = GameState::Title;

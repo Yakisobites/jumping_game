@@ -1,6 +1,8 @@
 use crate::config::*;
+use macroquad::prelude::*;
 use rapier2d::prelude::*;
 
+// === 物理ワールド ===
 pub struct PhysicsWorld {
     pub integration_parameters: IntegrationParameters,
     pub physics_pipeline: PhysicsPipeline,
@@ -51,5 +53,48 @@ impl PhysicsWorld {
             &(),
             &(),
         );
+    }
+}
+
+// === カメラ（PD制御によるスムーズ追従） ===
+pub struct Camera {
+    pub pos: Vector<f32>,
+    pub vel: Vector<f32>,
+}
+
+impl Camera {
+    pub fn new() -> Self {
+        Self {
+            pos: vector![0.0, 0.0],
+            vel: vector![0.0, 0.0],
+        }
+    }
+}
+
+// === ゲームアセット（テクスチャ等） ===
+pub struct GameAssets {
+    pub texture: Texture2D,
+    pub tex_scale: f32,
+}
+
+// === スコア・物理ステップ用の状態 ===
+pub struct GameScore {
+    pub current: f32,
+    pub high: f32,
+    pub physics_accumulator: f32,
+}
+
+impl GameScore {
+    pub fn new() -> Self {
+        Self {
+            current: 0.0,
+            high: 0.0,
+            physics_accumulator: 0.0,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.current = 0.0;
+        self.physics_accumulator = 0.0;
     }
 }
