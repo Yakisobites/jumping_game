@@ -14,9 +14,10 @@ enum GameState {
     Title,
     Playing,
     GameOver,
+    GameClear,
 }
 
-// ゲームの物理ワールド・カメラ・ECS Worldをリセットし、プレイヤーを再スポーンする
+// ゲームの物理ワールド・カメラ・ECS Worldをリセットし、プレイヤーとゴールを再スポーンする
 fn reset_game(world: &mut World, physics: &mut PhysicsWorld, camera: &mut Camera) {
     *world = World::new();
     *physics = PhysicsWorld::new();
@@ -24,6 +25,7 @@ fn reset_game(world: &mut World, physics: &mut PhysicsWorld, camera: &mut Camera
 
     systems::spawn_stage(physics);
     systems::spawn_player(world, physics);
+    systems::spawn_goal(world);
 }
 
 // フレーム時間を固定タイムステップに変換し、実行すべきステップ数を返す
@@ -54,6 +56,7 @@ async fn main() {
     // 初期スポーン
     systems::spawn_stage(&mut physics);
     systems::spawn_player(&mut world, &mut physics);
+    systems::spawn_goal(&mut world);
 
     // テクスチャの読み込みとスケール計算
     let texture = load_texture("assets/ferris.png").await.unwrap();
@@ -109,6 +112,11 @@ async fn main() {
                         score.high = score.current;
                     }
                     state = GameState::GameOver;
+                } else if systems::check_goal_system(&mut world) {
+                    if score.current > score.high {
+                        score.high = score.current;
+                    }
+                    state = GameState::GameClear;
                 }
 
                 systems::camera_update_system(&mut world, &mut camera, simulation_delta);
@@ -153,6 +161,45 @@ async fn main() {
 
                 draw_text("Press [R] to Restart", 40.0, 230.0, 25.0, WHITE);
                 draw_text("Press [ESC] for Title", 40.0, 260.0, 25.0, LIGHTGRAY);
+
+                if is_key_pressed(KeyCode::R) {
+                    reset_game(&mut world, &mut physics, &mut camera);
+                    score.reset();
+                    state = GameState::Playing;
+                } else if is_key_pressed(KeyCode::Escape) {
+                    state = GameState::Title;
+                }
+            }
+
+            GameState::GameClear => {
+                systems::draw_stage_system(&camera);
+
+                draw_rectangle(
+                    0.0,
+                    0.0,
+                    screen_width(),
+                    screen_height(),
+                    Color::new(0.0, 0.3, 0.0, 0.5),
+                );
+
+                draw_text("GAME CLEAR!", 40.0, 100.0, 60.0, GOLD);
+                draw_text(
+                    format!("YOUR SCORE: {:.2}s", score.current).as_str(),
+                    40.0,
+                    160.0,
+                    25.0,
+                    WHITE,
+                );
+                draw_text(
+                    format!("HIGH SCORE: {:.2}s", score.high).as_str(),
+                    40.0,
+                    190.0,
+                    25.0,
+                    ORANGE,
+                );
+
+                draw_text("Press [R] to Restart", 40.0, 240.0, 25.0, WHITE);
+                draw_text("Press [ESC] for Title", 40.0, 270.0, 25.0, LIGHTGRAY);
 
                 if is_key_pressed(KeyCode::R) {
                     reset_game(&mut world, &mut physics, &mut camera);

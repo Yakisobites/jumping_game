@@ -25,7 +25,7 @@ fn world_to_screen(v: Vector<f32>, camera_pos: Vector<f32>) -> Vec2 {
     )
 }
 
-// ステージ（床・オブジェクト）を描画する
+// ステージ（床・オブジェクト・ゴール）を描画する
 pub fn draw_stage_system(camera: &Camera) {
     let ground_params = world_to_screen_cuboid(
         vec4(0.0, 0.0, FLOOR_WIDTH, FLOOR_THICKNESS / 2.0),
@@ -46,6 +46,26 @@ pub fn draw_stage_system(camera: &Camera) {
         object_params.z,
         object_params.w,
         BLUE,
+    );
+
+    let goal_params = world_to_screen_cuboid(
+        vec4(GOAL_X, GOAL_Y, GOAL_HALF_WIDTH, GOAL_HALF_HEIGHT),
+        camera.pos,
+    );
+    draw_rectangle(
+        goal_params.x,
+        goal_params.y,
+        goal_params.z,
+        goal_params.w,
+        GOLD,
+    );
+    draw_rectangle_lines(
+        goal_params.x,
+        goal_params.y,
+        goal_params.z,
+        goal_params.w,
+        4.0,
+        YELLOW,
     );
 }
 
