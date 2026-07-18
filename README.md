@@ -3,6 +3,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B-orange?logo=rust)](#)
 [![Macroquad](https://img.shields.io/badge/Macroquad-0.4.15-blue?logo=rust)](#)
 [![Rapier2D](https://img.shields.io/badge/Rapier2D-0.30.1-success)](#)
+[![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Live-brightgreen?logo=github)](https://yakisobites.github.io/jumping_game/)
 
 ## 🎮 Overview
 
@@ -42,6 +43,13 @@ git clone https://github.com/Yakisobites/jumping_game.git
 cd jumping_game
 cargo run --release
 ```
+
+## 🌐 GitHub Pagesで遊ぶ
+
+このプロジェクトは GitHub Actions による自動デプロイに対応しており、`main` ブランチへの反映後に GitHub Pages へ公開されます。  
+ブラウザですぐにプレイしたい場合は、こちらからアクセスできます。
+
+- 🎯 Play Now: https://yakisobites.github.io/jumping_game/
 
 ## 🛠️ 開発メモ
 
