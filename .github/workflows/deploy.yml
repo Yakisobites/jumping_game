@@ -41,7 +41,7 @@ jobs:
       - name: Optimize WASM
         run: |
           mkdir -p dist
-          wasm-opt -Oz target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm -o dist/ferris_jumping_game.wasm
+          wasm-opt -O3 target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm -o dist/ferris_jumping_game.wasm
 
       - name: Copy static files
         run: |
