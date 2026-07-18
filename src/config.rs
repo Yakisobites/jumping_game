@@ -5,7 +5,10 @@ pub const ARM_HALF_HEIGHT: f32 = 0.4; // [m]
 pub const ARM_RADIUS: f32 = 0.25; // [m]
 pub const FLOOR_THICKNESS: f32 = 0.5; // [m]
 pub const FLOOR_WIDTH: f32 = 100.0; // [m]
-pub const TIME_DELTA: f32 = 1.0 / 1200.0; // [1/s]
+pub const TIME_DELTA: f32 = 1.0 / 120.0; // [1/s]
+pub const LEGACY_TIME_DELTA: f32 = 1.0 / 1200.0; // [1/s]
+pub const MAX_FRAME_TIME: f32 = 1.0 / 15.0; // [s]
+pub const MAX_PHYSICS_STEPS_PER_FRAME: usize = 8;
 
 // PD制御のゲイン
 pub const KP: f32 = 50.0;

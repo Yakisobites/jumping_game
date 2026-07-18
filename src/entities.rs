@@ -51,21 +51,22 @@ impl Player {
 
     pub fn handle_input(&self, world: &mut PhysicsWorld) {
         let body = world.bodies.get_mut(self.handle).unwrap();
+        let input_scale = world.integration_parameters.dt / LEGACY_TIME_DELTA;
 
         if is_key_down(KeyCode::Up) {
             body.reset_forces(true);
             body.reset_torques(true);
-            body.apply_impulse(vector![0.0, 0.05], true);
+            body.apply_impulse(vector![0.0, 0.05 * input_scale], true);
         }
         if is_key_down(KeyCode::Left) {
             body.reset_forces(true);
             body.reset_torques(true);
-            body.apply_impulse(vector![-0.03, 0.0], true);
+            body.apply_impulse(vector![-0.03 * input_scale, 0.0], true);
         }
         if is_key_down(KeyCode::Right) {
             body.reset_forces(true);
             body.reset_torques(true);
-            body.apply_impulse(vector![0.03, 0.0], true);
+            body.apply_impulse(vector![0.03 * input_scale, 0.0], true);
         }
     }
 

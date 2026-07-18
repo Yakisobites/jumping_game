@@ -16,8 +16,10 @@ pub struct PhysicsWorld {
 
 impl PhysicsWorld {
     pub fn new() -> Self {
-        let mut integration_parameters = IntegrationParameters::default();
-        integration_parameters.dt = TIME_DELTA;
+        let integration_parameters = IntegrationParameters {
+            dt: TIME_DELTA,
+            ..Default::default()
+        };
 
         Self {
             integration_parameters,

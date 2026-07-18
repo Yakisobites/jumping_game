@@ -33,12 +33,12 @@ impl Camera {
         }
     }
 
-    pub fn update(&mut self, target_pos: Vector<f32>) {
+    pub fn update(&mut self, target_pos: Vector<f32>, delta_time: f32) {
         let error = target_pos - self.pos;
         let force = error * KP - self.vel * KD;
 
-        self.vel += force * TIME_DELTA;
-        self.pos += self.vel * TIME_DELTA;
+        self.vel += force * delta_time;
+        self.pos += self.vel * delta_time;
     }
 }
 
@@ -79,13 +79,13 @@ pub fn draw_player(
 
     draw_texture_ex(
         texture,
-        screen_pos.x - texture.width() as f32 * tex_scale / 2.0,
-        screen_pos.y - texture.height() as f32 * tex_scale / 2.0,
+        screen_pos.x - texture.width() * tex_scale / 2.0,
+        screen_pos.y - texture.height() * tex_scale / 2.0,
         WHITE,
         DrawTextureParams {
             dest_size: Some(vec2(
-                texture.width() as f32 * tex_scale,
-                texture.height() as f32 * tex_scale,
+                texture.width() * tex_scale,
+                texture.height() * tex_scale,
             )),
             rotation: angle,
             ..Default::default()
