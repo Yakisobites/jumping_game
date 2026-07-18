@@ -45,12 +45,48 @@ The `ferris.png` asset is sourced from the [macroquad](https://github.com/not-fl
 
 ## 🚀 Getting Started
 
-If you have a Rust development environment set up, you can run this project locally.
+### Prerequisites
 
-_(Steps to run locally will be added here soon)_
+- [Rust](https://rustup.rs/) (edition 2024 / 1.85+)
+- [just](https://github.com/casey/just) — command runner (`cargo install just`)
+- **Either** [Docker](https://docs.docker.com/get-docker/) *(recommended, no extra setup needed)*  
+  **or** the local toolchain below
+
+#### Local toolchain (without Docker)
+
+```sh
+# 1. Install binaryen (provides wasm-opt)
+sudo apt update && sudo apt install -y binaryen   # Ubuntu/Debian
+# brew install binaryen                           # macOS
+
+# 2. Install basic-http-server
+cargo install basic-http-server
+
+# 3. Add the WASM target
+rustup target add wasm32-unknown-unknown
+```
+
+### Run locally
+
+```sh
+# Automatically uses Docker if available, otherwise falls back to local toolchain
+just run
+```
+
+The game will be served at **http://localhost:4000**.
+
+#### Individual steps
+
+| Command | Description |
+|---|---|
+| `just build` | Compile to WebAssembly |
+| `just dist` | Optimize WASM and copy assets to `dist/` |
+| `just serve` | Start HTTP server on `dist/` |
+| `just docker-image` | Build the Docker image |
+| `just docker-run` | Build & serve inside Docker |
+| `just test` | Run fmt / clippy / check / tests |
 
 ## 🛠️ Development Notes
 
 - Built using the **Rust 2024 Edition**.
-- Run optimized builds locally with: `cargo run --release`.
 - Combining Rapier2D and Macroquad makes this a fantastic micro-project for both learning Rust and rapid prototyping.
