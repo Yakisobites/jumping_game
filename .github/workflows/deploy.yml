@@ -28,18 +28,25 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+      - name: Install wasm-opt (Binaryen)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binaryen
 
       - name: Build WASM
         run: cargo build --release --target wasm32-unknown-unknown
         env:
           RUSTFLAGS: "-C link-arg=--allow-undefined"
 
-      - name: Prepare artifact directory
+      - name: Optimize WASM
         run: |
-          mkdir dist
-          cp target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm dist/
+          mkdir -p dist
+          wasm-opt -Oz target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm -o dist/ferris_jumping_game.wasm
+
+      - name: Copy static files
+        run: |
           cp index.html dist/
-          # assetsディレクトリがあればコピー（エラー無視）
+          cp ferris_jumping_game.js dist/
           cp -r assets dist/ || true
 
       - name: Setup GitHub Pages

@@ -11,12 +11,12 @@
     </style>
 </head>
 <body>
-    <canvas id="glcanvas" tabindex='1'></canvas>
-    <!-- Macroquadの標準的なJSバンドル -->
-    <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle.js"></script>
-    <script>
-        // Cargo.tomlの package.name と同じ名前にしてください
-        load("ferris_jumping_game.wasm");
+    <canvas id="glcanvas" tabindex="1"></canvas>
+
+    <script type="module">
+        import init from "./ferris_jumping_game.js";
+        init();
     </script>
 </body>
 </html>
+
