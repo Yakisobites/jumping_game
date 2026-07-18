@@ -11,14 +11,31 @@ use crate::entities::{Player, spawn_stage};
 use crate::physics::PhysicsWorld;
 use crate::render::{Camera, draw_player, draw_stage};
 
+// 1. Configure game state
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GameState {
+    Title,
+    Playing,
+    GameOver,
+}
+
+// reset the initial state of the physics world and the camera
+fn reset_game(physics: &mut PhysicsWorld, camera: &mut Camera) -> Player {
+    *physics = PhysicsWorld::new();
+    *camera = Camera::new();
+
+    spawn_stage(physics);
+    Player::spawn(physics)
+}
+
 #[macroquad::main("Rapier + Macroquad Bouncing Ball")]
 async fn main() {
     // 初期化
+    let mut state = GameState::Title;
     let mut physics = PhysicsWorld::new();
     let mut camera = Camera::new();
 
-    spawn_stage(&mut physics);
-    let player = Player::spawn(&mut physics);
+    let mut player = Player::spawn(&mut physics);
 
     // テクスチャの読み込みとスケール計算
     let texture = load_texture("assets/ferris.png").await.unwrap();
@@ -30,32 +47,61 @@ async fn main() {
     loop {
         clear_background(LIGHTGRAY);
 
-        // 1. 入力処理
-        player.handle_input(&mut physics);
+        match state {
+            GameState::Title => {
+                draw_text("FERRIS BOUNCER", 40.0, 100.0, 50.0, DARKGRAY);
+                draw_text("Press [ENTER] to start", 40.0, 160.0, 25.0, GRAY);
 
-        // 2. 物理演算のステップ実行
-        physics.step();
-        player.enforce_speed_limit(&mut physics);
+                if is_key_pressed(KeyCode::Enter) {
+                    player = reset_game(&mut physics, &mut camera);
+                    state = GameState::Playing;
+                }
+            }
 
-        // 3. プレイヤーの状態を取得
-        let body = physics.bodies.get(player.handle).unwrap();
-        let pos = body.translation();
-        let angle = body.rotation().angle();
+            GameState::Playing => {
+                player.handle_input(&mut physics);
+                physics.step();
+                player.enforce_speed_limit(&mut physics);
 
-        // 4. 終了判定
-        if is_key_down(KeyCode::Escape)
-            || pos.y < LOWER_WORLD_BOUND
-            || PI - angle.abs() < ANGLE_THRESHOLD
-        {
-            break;
+                let body = physics.bodies.get(player.handle).unwrap();
+                let pos = body.translation();
+                let angle = body.rotation().angle();
+
+                if is_key_down(KeyCode::Escape) {
+                    state = GameState::Title;
+                } else if pos.y < LOWER_WORLD_BOUND || PI - angle.abs() < ANGLE_THRESHOLD {
+                    state = GameState::GameOver;
+                }
+
+                camera.update(*pos);
+
+                draw_stage(camera.pos);
+                draw_player(pos, angle, &texture, tex_scale, camera.pos);
+            }
+
+            GameState::GameOver => {
+                draw_stage(camera.pos);
+
+                draw_rectangle(
+                    0.0,
+                    0.0,
+                    screen_width(),
+                    screen_height(),
+                    Color::new(0.3, 0.0, 0.0, 0.5),
+                );
+
+                draw_text("GAME OVER", 40.0, 100.0, 60.0, RED);
+                draw_text("Press [R] to Restart", 40.0, 180.0, 25.0, WHITE);
+                draw_text("Press [ESC] for Title", 40.0, 220.0, 25.0, LIGHTGRAY);
+
+                if is_key_pressed(KeyCode::R) {
+                    player = reset_game(&mut physics, &mut camera);
+                    state = GameState::Playing;
+                } else if is_key_pressed(KeyCode::Escape) {
+                    state = GameState::Title;
+                }
+            }
         }
-
-        // 5. カメラ追従の更新
-        camera.update(*pos);
-
-        // 6. 描画
-        draw_stage(camera.pos);
-        draw_player(pos, angle, &texture, tex_scale, camera.pos);
 
         next_frame().await;
     }
