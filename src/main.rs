@@ -108,12 +108,12 @@ async fn main() {
                 } else if player_pos_y < LOWER_WORLD_BOUND
                     || PI - player_angle.abs() < ANGLE_THRESHOLD
                 {
-                    if score.current > score.high {
-                        score.high = score.current;
-                    }
+                    // ゲームオーバーは0点
+                    score.current = 0.0;
                     state = GameState::GameOver;
                 } else if systems::check_goal_system(&mut world) {
-                    if score.current > score.high {
+                    // ゴールクリア：最短タイムをベストタイムとして記録
+                    if score.high == 0.0 || score.current < score.high {
                         score.high = score.current;
                     }
                     state = GameState::GameClear;
@@ -144,15 +144,14 @@ async fn main() {
                 );
 
                 draw_text("GAME OVER", 40.0, 100.0, 60.0, RED);
+                draw_text("SCORE: 0", 40.0, 150.0, 25.0, WHITE);
                 draw_text(
-                    format!("YOUR SCORE: {:.2}s", score.current).as_str(),
-                    40.0,
-                    150.0,
-                    25.0,
-                    WHITE,
-                );
-                draw_text(
-                    format!("HIGH SCORE: {:.2}s", score.high).as_str(),
+                    if score.high > 0.0 {
+                        format!("BEST TIME: {:.2}s", score.high)
+                    } else {
+                        "BEST TIME: ---".to_string()
+                    }
+                    .as_str(),
                     40.0,
                     180.0,
                     25.0,
@@ -184,14 +183,14 @@ async fn main() {
 
                 draw_text("GAME CLEAR!", 40.0, 100.0, 60.0, GOLD);
                 draw_text(
-                    format!("YOUR SCORE: {:.2}s", score.current).as_str(),
+                    format!("CLEAR TIME: {:.2}s", score.current).as_str(),
                     40.0,
                     160.0,
                     25.0,
                     WHITE,
                 );
                 draw_text(
-                    format!("HIGH SCORE: {:.2}s", score.high).as_str(),
+                    format!("BEST TIME:  {:.2}s", score.high).as_str(),
                     40.0,
                     190.0,
                     25.0,
