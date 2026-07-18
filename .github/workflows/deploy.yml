@@ -33,8 +33,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y binaryen
 
+      - name: Install miniquad tools
+        run: pip install miniquad-tools
+
       - name: Build WASM
-        run: cargo build --release --target wasm32-unknown-unknown
+        run: |
+          cargo build --release --target wasm32-unknown-unknown
+          python3 -m miniquad_tools.build --target wasm32-unknown-unknown
         env:
           RUSTFLAGS: "-C link-arg=--allow-undefined"
 
@@ -47,6 +52,7 @@ jobs:
         run: |
           cp index.html dist/
           cp ferris_jumping_game.js dist/
+          cp ferris_jumping_game.wasm dist/
           cp -r assets dist/ || true
 
       - name: Setup GitHub Pages
