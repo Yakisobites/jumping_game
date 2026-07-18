@@ -39,8 +39,7 @@ pub fn draw_stage_system(camera: &Camera) {
         DARKGRAY,
     );
 
-    let object_params =
-        world_to_screen_cuboid(vec4(5.0, 5.0 / 2.0, 1.0, 5.0 / 2.0), camera.pos);
+    let object_params = world_to_screen_cuboid(vec4(5.0, 5.0 / 2.0, 1.0, 5.0 / 2.0), camera.pos);
     draw_rectangle(
         object_params.x,
         object_params.y,

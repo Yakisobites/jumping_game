@@ -7,17 +7,46 @@ on:
     branches: ["main"]
 
 jobs:
-  check:
+  # 1. 構文チェック、静的解析、ユニットテスト（高速にフィードバックを返す）
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
 
-      # util cache
+      - name: Install just
+        uses: taiki-e/install-action@just
+
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Cargo Check
-        run: cargo check --verbose
+      # justfileで定義された fmt, clippy, check, cargo-test を一括実行
+      - name: Run code quality checks and tests
+        run: just test
+
+  # 2. WASMビルド検証（ゲームとして正常にビルドできるか）
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      # justfileの add-target と build を実行
+      - name: Build WASM release
+        run: |
+          just add-target
+          just build
