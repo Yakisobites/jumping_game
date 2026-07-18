@@ -41,4 +41,28 @@ serve:
     basic-http-server dist
 
 # Run all steps (build -> dist -> local server)
-run: build dist serve
+# Uses Docker automatically if available; falls back to local toolchain
+run:
+    #!/usr/bin/env sh
+    if command -v docker >/dev/null 2>&1; then
+        just docker-run
+    else
+        just build && just dist && just serve
+    fi
+
+# ============================
+# Docker targets
+# ============================
+
+# Build the Docker image (installs all required tools)
+docker-image:
+    docker build -t jumping_game .
+
+# Run the full pipeline inside Docker: build -> dist -> serve on http://localhost:4000
+# Mounts the project directory so no source copy is needed
+docker-run: docker-image
+    docker run --rm -p 4000:4000 \
+        -v "{{justfile_directory()}}:/app" \
+        -v "jumping_game_cargo_cache:/root/.cargo/registry" \
+        jumping_game \
+        sh -c "just build && just dist && basic-http-server --addr 0.0.0.0:4000 dist"
