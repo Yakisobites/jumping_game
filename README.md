@@ -30,6 +30,10 @@ Control Ferris, balance through snappy physics-driven mechanics, keep bouncing, 
 - [rapier2d](https://github.com/dimforge/rapier) - 2D Physics Engine for Rust
 - [macroquad](https://github.com/not-fl3/macroquad) - Lightweight Game Rendering & Input Library
 
+## 🦀 Credit
+
+The `ferris.png` asset is sourced from the [macroquad](https://github.com/not-fl3/macroquad) repository.
+
 ## 🕹️ Controls
 
 - `Enter`: Start Game (Title Screen)
