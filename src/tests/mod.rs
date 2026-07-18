@@ -1,4 +1,4 @@
-use crate::{consume_physics_steps, config::*};
+use crate::{config::*, consume_physics_steps};
 
 #[test]
 fn consume_physics_steps_carries_fractional_time() {
