@@ -28,6 +28,22 @@ fn reset_game(physics: &mut PhysicsWorld, camera: &mut Camera) -> Player {
     Player::spawn(physics)
 }
 
+fn consume_physics_steps(accumulator: &mut f32, frame_time: f32) -> usize {
+    *accumulator += frame_time.min(MAX_FRAME_TIME);
+
+    let mut steps = 0;
+    while *accumulator >= TIME_DELTA && steps < MAX_PHYSICS_STEPS_PER_FRAME {
+        *accumulator -= TIME_DELTA;
+        steps += 1;
+    }
+
+    if steps == MAX_PHYSICS_STEPS_PER_FRAME {
+        *accumulator = 0.0;
+    }
+
+    steps
+}
+
 #[macroquad::main("Rapier + Macroquad Bouncing Ball")]
 async fn main() {
     // initialize game state
@@ -39,6 +55,7 @@ async fn main() {
     // === variables for game scores ===
     let mut current_score = 0.0;
     let mut high_score = 0.0;
+    let mut physics_accumulator = 0.0;
 
     //load a texture file
     let texture = load_texture("assets/ferris.png").await.unwrap();
@@ -58,17 +75,21 @@ async fn main() {
                 if is_key_pressed(KeyCode::Enter) {
                     player = reset_game(&mut physics, &mut camera);
                     current_score = 0.0;
+                    physics_accumulator = 0.0;
                     state = GameState::Playing;
                 }
             }
 
             GameState::Playing => {
-                player.handle_input(&mut physics);
-                physics.step();
-                player.enforce_speed_limit(&mut physics);
+                let frame_time = get_frame_time();
+                let simulation_delta = frame_time.min(MAX_FRAME_TIME);
 
-                // Add score as a 1 step time step
-                current_score += TIME_DELTA;
+                for _ in 0..consume_physics_steps(&mut physics_accumulator, frame_time) {
+                    player.handle_input(&mut physics);
+                    physics.step();
+                    player.enforce_speed_limit(&mut physics);
+                    current_score += TIME_DELTA;
+                }
 
                 let body = physics.bodies.get(player.handle).unwrap();
                 let pos = body.translation();
@@ -83,13 +104,13 @@ async fn main() {
                     state = GameState::GameOver;
                 }
 
-                camera.update(*pos);
+                camera.update(*pos, simulation_delta);
 
                 draw_stage(camera.pos);
                 draw_player(pos, angle, &texture, tex_scale, camera.pos);
 
                 draw_text(
-                    &format!("TIME: {:.2}s", current_score),
+                    format!("TIME: {:.2}s", current_score).as_str(),
                     20.0,
                     40.0,
                     30.0,
@@ -110,14 +131,14 @@ async fn main() {
 
                 draw_text("GAME OVER", 40.0, 100.0, 60.0, RED);
                 draw_text(
-                    &format!("YOUR SCORE: {:.2}s", current_score),
+                    format!("YOUR SCORE: {:.2}s", current_score).as_str(),
                     40.0,
                     150.0,
                     25.0,
                     WHITE,
                 );
                 draw_text(
-                    &format!("HIGH SCORE: {:.2}s", current_score),
+                    format!("HIGH SCORE: {:.2}s", current_score).as_str(),
                     40.0,
                     180.0,
                     25.0,
@@ -130,6 +151,7 @@ async fn main() {
                 if is_key_pressed(KeyCode::R) {
                     player = reset_game(&mut physics, &mut camera);
                     current_score = 0.0;
+                    physics_accumulator = 0.0;
                     state = GameState::Playing;
                 } else if is_key_pressed(KeyCode::Escape) {
                     state = GameState::Title;
@@ -140,3 +162,6 @@ async fn main() {
         next_frame().await;
     }
 }
+
+#[cfg(test)]
+mod tests;
