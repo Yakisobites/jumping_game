@@ -124,8 +124,8 @@ async fn main() {
                     ORANGE,
                 );
 
-                draw_text("Press [R] to Restart", 40.0, 180.0, 25.0, WHITE);
-                draw_text("Press [ESC] for Title", 40.0, 220.0, 25.0, LIGHTGRAY);
+                draw_text("Press [R] to Restart", 40.0, 230.0, 25.0, WHITE);
+                draw_text("Press [ESC] for Title", 40.0, 260.0, 25.0, LIGHTGRAY);
 
                 if is_key_pressed(KeyCode::R) {
                     player = reset_game(&mut physics, &mut camera);
