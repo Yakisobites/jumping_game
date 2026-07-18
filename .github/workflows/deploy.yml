@@ -46,7 +46,6 @@ jobs:
       - name: Copy static files
         run: |
           cp index.html dist/
-          cp ferris_jumping_game.wasm dist/
           cp -r assets dist/ || true
 
       - name: Setup GitHub Pages
