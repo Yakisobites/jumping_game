@@ -1,8 +1,11 @@
 # ============================
-# Justfile for Macroquad WASM build
+# Justfile for Macroquad WASM build (Cross-Platform)
 # ============================
 
-# Code formatting
+[windows]
+set shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
+
+# Format code
 fmt:
     cargo fmt --all
 
@@ -25,44 +28,35 @@ test: fmt clippy check cargo-test
 add-target:
     rustup target add wasm32-unknown-unknown
 
-# Release build (using the same RUSTFLAGS as CI)
+# Release build (handling environment variable differences per OS)
 build:
-    RUSTFLAGS='-C link-arg=--allow-undefined' cargo build --release --target wasm32-unknown-unknown
+    {{ if os() == "windows" { "$env:RUSTFLAGS='-C link-arg=--allow-undefined'; cargo build --release --target wasm32-unknown-unknown" } else { "RUSTFLAGS='-C link-arg=--allow-undefined' cargo build --release --target wasm32-unknown-unknown" } }}
 
-# Create dist, optimize wasm with wasm-opt, and copy required files
+# Create dist directory and copy required files (handling cross-platform command differences)
 dist:
-    mkdir -p dist
-    wasm-opt -O3 target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm -o dist/ferris_jumping_game.wasm
-    cp index.html dist/
-    cp -r assets dist/ || true
+    {{ if os() == "windows" { "if (-not (Test-Path dist)) { New-Item -ItemType Directory -Path dist -Force }" } else { "mkdir -p dist" } }}
+    # Uncomment to optimize with wasm-opt if needed
+    # wasm-opt -O3 target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm -o dist/ferris_jumping_game.wasm
+    {{ if os() == "windows" { "Copy-Item target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm dist/" } else { "cp target/wasm32-unknown-unknown/release/ferris_jumping_game.wasm dist/" } }}
+    {{ if os() == "windows" { "Copy-Item index.html dist/" } else { "cp index.html dist/" } }}
+    {{ if os() == "windows" { "if (Test-Path assets) { Copy-Item -Recurse -Force assets dist/ }" } else { "cp -r assets dist/ 2>/dev/null || true" } }}
 
 # Start a simple local server (WASM requires HTTP)
 serve:
     basic-http-server dist
 
-# Run all steps (build -> dist -> local server)
-# Uses Docker automatically if available; falls back to local toolchain
+# Run all steps (uses Docker if available; falls back to local toolchain)
 run:
-    #!/usr/bin/env sh
-    if command -v docker >/dev/null 2>&1; then
-        just docker-run
-    else
-        just build && just dist && just serve
-    fi
+    {{ if os() == "windows" { "if (Get-Command docker -ErrorAction SilentlyContinue) { just docker-run } else { just build; just dist; just serve }" } else { "if command -v docker >/dev/null 2>&1; then just docker-run; else just build && just dist && just serve; fi" } }}
 
 # ============================
-# Docker targets
+# Docker targets (Linux/Mac, or Windows with Docker Desktop)
 # ============================
 
-# Build the Docker image (installs all required tools)
+# Build the Docker image
 docker-image:
     docker build -t jumping_game .
 
-# Run the full pipeline inside Docker: build -> dist -> serve on http://localhost:4000
-# Mounts the project directory so no source copy is needed
+# Run the full pipeline inside Docker: build -> dist -> serve
 docker-run: docker-image
-    docker run --rm -p 4000:4000 \
-        -v "{{justfile_directory()}}:/app" \
-        -v "jumping_game_cargo_cache:/root/.cargo/registry" \
-        jumping_game \
-        sh -c "just build && just dist && basic-http-server --addr 0.0.0.0:4000 dist"
+    docker run --rm -p 4000:4000 --mount type=bind,source={{justfile_directory()}},target=/app --mount type=volume,source=jumping_game_cargo_cache,target=/root/.cargo/registry jumping_game sh -c "just build && just dist && basic-http-server --addr 0.0.0.0:4000 dist"
