@@ -2,8 +2,7 @@ FROM rust:1-slim-bookworm
 
 # Use Debian's default mirror configuration. deb.debian.org already resolves through Debian's CDN.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    binaryen \
+    apt-get install -y --no-install-recommends binaryen && \
     rm -rf /var/lib/apt/lists/*
 
 # Avoid cargo install here because compiling helper tools significantly slows image builds.
