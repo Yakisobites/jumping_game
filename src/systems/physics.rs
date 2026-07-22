@@ -33,3 +33,15 @@ pub fn enforce_speed_limit_system(world: &mut World, physics: &mut PhysicsWorld)
         }
     }
 }
+
+// プレイヤーがゴール領域（AABB）に接触しているか判定する
+pub fn check_goal_system(world: &mut World) -> bool {
+    for (_tag, pos) in world.query_mut::<(&PlayerTag, &Position)>() {
+        if (pos.x - GOAL_X).abs() < GOAL_HALF_WIDTH + BALL_RADIUS
+            && (pos.y - GOAL_Y).abs() < GOAL_HALF_HEIGHT + BALL_RADIUS
+        {
+            return true;
+        }
+    }
+    false
+}

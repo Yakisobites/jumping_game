@@ -1,5 +1,5 @@
 use crate::{
-    components::{PhysicsBody, PlayerTag, Position, Rotation},
+    components::{GoalTag, PhysicsBody, PlayerTag, Position, Rotation},
     config::*,
     resources::PhysicsWorld,
 };
@@ -15,6 +15,17 @@ pub fn spawn_stage(physics: &mut PhysicsWorld) {
         .translation(vector![5.0, 5.0 / 2.0])
         .build();
     physics.colliders.insert(object);
+}
+
+// ゴールエンティティをECS Worldに登録する
+pub fn spawn_goal(world: &mut World) {
+    world.spawn((
+        GoalTag,
+        Position {
+            x: GOAL_X,
+            y: GOAL_Y,
+        },
+    ));
 }
 
 // プレイヤーエンティティを物理ワールドとECS Worldの両方に登録する

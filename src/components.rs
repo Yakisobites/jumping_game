@@ -18,3 +18,6 @@ pub struct PhysicsBody {
 
 // プレイヤーエンティティを識別するマーカー
 pub struct PlayerTag;
+
+// ゴールエンティティを識別するマーカー
+pub struct GoalTag;

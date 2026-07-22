@@ -19,3 +19,9 @@ pub const LOWER_WORLD_BOUND: f32 = -50.0; // [m]
 pub const ANGLE_THRESHOLD: f32 = 0.2; // [rad]
 pub const MAX_SPEED: f32 = 10.0; // [m/s]
 pub const GRAVITY: [f32; 2] = [0.0, -9.81];
+
+// ゴールオブジェクトの位置とサイズ
+pub const GOAL_X: f32 = 15.0; // ゴール中心のX座標 [m]
+pub const GOAL_Y: f32 = 1.5; // ゴール中心のY座標 [m]
+pub const GOAL_HALF_WIDTH: f32 = 1.5; // ゴールの半幅 [m]
+pub const GOAL_HALF_HEIGHT: f32 = 1.5; // ゴールの半高さ [m]
